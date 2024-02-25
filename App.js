@@ -1,36 +1,44 @@
 import axios from 'axios';
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import Stack from './helpers/Stack';
+import { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, BackHandler } from 'react-native';
 
 export default function App() {
+    const [fileSystemData, setFileSystemData] = useState(getDirectoryContent(1));
+    const [directorysHistoryStack, setDirectorysHistoryStack] = useState(new Stack(1));
+
+    useEffect(()=> {
+        BackHandler.addEventListener("hardwareBackPress", () => {
+            setDirectorysHistoryStack(directorysHistoryStack.pop())
+            return true
+        })
+    }, [])
     
+    useEffect(() => {
+        // WTF?
+        setFileSystemData(getDirectoryContent(directorysHistoryStack.peek()))        
+    }, [directorysHistoryStack]);
+
     return (
         <>
-            {/* infinte loop :/ */}
-            {/* <FileSystemComponent /> */}
-            <StatusBar style="auto" />
+            <FileSystem 
+                fileSystemData={fileSystemData}
+                directorysHistoryStack={directorysHistoryStack}
+                setDirectorysHistoryStack={setDirectorysHistoryStack}
+            />
         </>
     );
 }
 
-// const fileSystemData = [
-//     { id: '1', name: 'Home', type: 'folder' },
-//     { id: '2', name: 'Documents', type: 'folder' },
-//     { id: '3', name: 'Downloads', type: 'folder' },
-//     { id: '4', name: 'File.txt', type: 'file' },
-// ];
 
-// File System Component
-const FileSystemComponent = () => {
+function FileSystem({ fileSystemData, directorysHistoryStack, setDirectorysHistoryStack }) {
     const [selectedItem, setSelectedItem] = useState(null);
-    const [fileSystemData, setFileSystemData] = useState(null);
-    
-    setFileSystemData(getDirectoryContent(setFileSystemData));
-    
+
     const handleItemPress = (item) => {        
         setSelectedItem(item);
+        if (item.type === 'folder') {
+            setDirectorysHistoryStack(directorysHistoryStack.push(item.dbId))
+        }
     };
 
     const renderItem = ({ item }) => (
@@ -52,33 +60,28 @@ const FileSystemComponent = () => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
             />
-            {selectedItem && (
-                <View className='p-4'>
-                <Text className='text-base font-bold'>
-                    Selected: {selectedItem.name}
-                </Text>
-                </View>
-            )}
         </View>
     );
 };
 
+function getDirectoryContent(currentDirectoryId) {
+    let fileSystem = []
+    const params = {
+        dirId: currentDirectoryId
+    };
 
-async function getDirectoryContent() {
-    const response = await axios.get(`http://192.168.1.10:8000`, null, { params: {
-    }})
-    .then(response => {
+    const response = axios.get(`http://192.168.1.10:8000`, { params }).then(response => {
         let filesArray = response.data.pop()
         let directorysArray = response.data;
         let dataId = 0
-        let fileSystem = []
 
         directorysArray.forEach(directoryObject => {
             dataId += 1
             fileSystem.push({
                 id: dataId,
                 name: directoryObject.dirPath,
-                type: 'folder'
+                type: 'folder',
+                dbId: directoryObject.dirId
             })
         });
 
@@ -87,11 +90,13 @@ async function getDirectoryContent() {
             fileSystem.push({
                 id: dataId,
                 name: fileObject.fileName,
-                type: 'file'
+                type: 'file',
+                dbId: fileObject.fileId
             })
         });
+    }).catch(error => {
+        console.log(error);
+    });
 
-        return fileSystem
-    })
-    .catch(err => setFileSystemData([]));
+    return fileSystem
 }
