@@ -3,19 +3,20 @@ export default class Stack {
         this.items = [...initialItems];
     }
     peek() {
-        return this.isEmpty() ? 1 : this.items[this.items.length - 1];
+        return this.isEmpty() ? null : this.items[this.items.length - 1];
     }
     
     push(element) {
         if (this.peek() === element) {
-            return this
+            return null
         }
+        
         this.items.push(element);
         return new Stack(...this.items);
     }
 
     pop() {
-        if (this.size() === 1 || this.size() === 0) {
+        if (this.size() === 1) {
             return this;
         }
         
