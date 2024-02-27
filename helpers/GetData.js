@@ -1,10 +1,9 @@
 import axios from 'axios';
+import StorageClient from './StorageAPIClient';
 
 export default async function getFileSystem(currentDirectoryId, setFileSystemData) {
-    const params = {
-        dirId: currentDirectoryId
-    };
-    const response = await axios.get(`http://192.168.1.10:8000`, { params });
+    let client = new StorageClient()
+    const response = await client.getCurrentDirectoryContents(currentDirectoryId) 
     
     if (response.status === 200) {
         let fileSystem = []
