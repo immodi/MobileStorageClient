@@ -2,6 +2,7 @@
   "expo": {
     "name": "SorageClient",
     "slug": "SorageClient",
+    "scheme": "storage-client",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -31,6 +32,9 @@
       "eas": {
         "projectId": "39ed60ba-c41d-4824-af85-69bd480f534b"
       }
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

@@ -2,6 +2,7 @@ import Stack from '../helpers/Stack'
 import getFileSystem from '../helpers/GetData';
 import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, BackHandler } from 'react-native';
+import { router } from 'expo-router';
 
 export default function FileSystem() {
     const [fileSystemData, setFileSystemData] = useState(null);
@@ -26,11 +27,22 @@ export default function FileSystem() {
     }, [fileSystemData])
 
 
-    const handleItemPress = (item) => {        
+    const handleItemPress = (item) => {       
         setSelectedItem(item);
         if (item.type === 'folder' && directorysHistoryStack.peek() !== item.dbId) {
             refreshFileSystem(directorysHistoryStack.push(item.dbId), setFileSystemData, setDirectorysHistoryStack, setLoading);
             console.log("added new item");
+        }
+
+        if (item.type === 'file') {
+            router.push({
+                pathname: "/file",
+                params: {
+                    id: item.dbId,
+                    name: item.name,
+                    size: getItemSizeString(item.size)
+                }
+            })
         }
     };
 
@@ -40,7 +52,7 @@ export default function FileSystem() {
                 <Text className='text-base'>
                     {item.type === 'folder' ? '📁 ' : '📄 '}
                     {item.type === 'folder'? getBaseName(item.name) : item.name}
-                </Text>
+                </Text> 
                 {item.type === 'file' && <Text className='text-sm ml-auto'>{getItemSizeString(item.size)}</Text>}
             </View>
         </TouchableOpacity>
@@ -50,7 +62,7 @@ export default function FileSystem() {
     return (
         !loading
         ?
-        <View className='flex-1 mt-4'>
+        <View className='flex-1'>
             <Text className='text-xl font-bold p-4'>File System</Text>
             {
                 fileSystemData

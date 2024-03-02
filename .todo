@@ -1,0 +1,3 @@
+1- Add a caching system to the 'FileSystem' component to preserve it's state after remounts
+
+2- Better UI for the file downloader

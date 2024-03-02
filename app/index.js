@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import FileSystem from './components/FileSystem'
-import StorageClient from './helpers/StorageAPIClient';
-import downloadFile from './helpers/downloadFile';
-import useBaseDirectory from './helpers/hooks/useBaseDirectory';
+import FileSystem from '../components/FileSystem'
+// import StorageClient from './helpers/StorageAPIClient';
+import downloadFile from '../helpers/downloadFile';
+import useBaseDirectory from '../helpers/hooks/useBaseDirectory';
+import { Text, View } from "react-native";
+import { Link } from "expo-router";
 
 export default function App() {
-    // testClient()
-    const permissions = useBaseDirectory()
+    const permissions = useBaseDirectory();
     useEffect(() => {
         if (permissions !== null) {
             // console.log(permissions);
-            testClient(permissions)
+            // testClient(permissions)
         }
     }, [permissions])
 
@@ -39,5 +40,7 @@ function testClient(permissions) {
         downloadFile(permissions, element[0], element[1], element[2])
         console.log(`download ${element[1]}`);
     });
-
 }
+
+
+// "main": "node_modules/expo/AppEntry.js",
