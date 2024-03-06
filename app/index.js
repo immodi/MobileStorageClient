@@ -7,14 +7,6 @@ import { Text, View } from "react-native";
 import { Link } from "expo-router";
 
 export default function App() {
-    const permissions = useBaseDirectory();
-    useEffect(() => {
-        if (permissions !== null) {
-            // console.log(permissions);
-            // testClient(permissions)
-        }
-    }, [permissions])
-
     return (
         <FileSystem />
     );

@@ -1,23 +1,21 @@
 import * as FileSystem from 'expo-file-system';
 
-export default function downloadFile(permissions, downloadUrl, fileName, fileMimeType) {
-    // const [progress, setProgress] = useState(0);
-    // const [downloadUrl, setDownloadUrl] = useState(inputDownloadUrl);
-    // const [fileName, setFileName] = useState(inputFileName);
-            
+export default async function downloadFile(permissions, progress, setProgress) {    
+
+    let downloadUrl =  progress.data[progress.currentIteration][0]
+    let fileName = progress.data[progress.currentIteration][1]
+    let fileMimeType = progress.data[progress.currentIteration][2]
     const downloadResumable = createDownloadResumable(downloadUrl, fileName)
-    // const fileMimeType = 'image/jpeg'
-    startDownloading(permissions, downloadResumable, fileName, fileMimeType)
+
+    return await startDownloading(permissions, downloadResumable, fileName, fileMimeType, progress, setProgress)
 }
 
-const startDownloading = async (permissions, downloadResumable, fileName, fileMimeType) => {
+
+const startDownloading = async (permissions, downloadResumable, fileName, fileMimeType, progress, setProgress) => {
     try {
         if (permissions) {
-            console.log("got permissions");
             const { uri } = await downloadResumable.downloadAsync();
-            console.log('Finished downloading to ', uri);
-            saveAndroidFile(permissions, uri, fileName, fileMimeType);
-            return
+            return await saveAndroidFile(permissions, uri, fileName, fileMimeType, progress, setProgress);
         }
     } catch (e) {
         console.error(e);
@@ -35,7 +33,7 @@ const createDownloadResumable = (url, fileName) => {
     return downloadResumable
 }
 
-const saveAndroidFile = async (permissions, fileUri, fileName, fileMimeType) => {
+const saveAndroidFile = async (permissions, fileUri, fileName, fileMimeType, progress, setProgress) => {
     try {
         // const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(baseDirectoryUri);
         if (!permissions.granted) {
@@ -46,13 +44,25 @@ const saveAndroidFile = async (permissions, fileUri, fileName, fileMimeType) => 
         try {
             console.log("got permissions saving");
             const fileString = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+            let outputFileUri = null
             await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri+"%2F", fileName, fileMimeType)
             .then(async (uri) => {
                 await FileSystem.writeAsStringAsync(uri, fileString, { encoding: FileSystem.EncodingType.Base64 });
                 // alert(`File ${fileName} saved in ${permissions.directoryUri}`);
+                if (progress.currentIteration < progress.data.length) {
+                    setProgress({
+                        ...progress,
+                        progress: progress.progress + 1/progress.data.length,
+                        currentIteration: progress.currentIteration + 1,
+                    })
+                }
+                outputFileUri = uri
             }).catch((e) => {
                 console.log(e);
             });
+            return new Promise((resolve, reject) => {
+                resolve(outputFileUri)
+            })
         } catch (e) {
             throw new Error(e);
         }
