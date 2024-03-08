@@ -27,7 +27,7 @@ export default function FileSystem() {
     }, [fileSystemData])
 
 
-    const handleItemPress = (item) => {       
+    const handleItemPress = (item) => {    
         setSelectedItem(item);
         if (item.type === 'folder' && directorysHistoryStack.peek() !== item.dbId) {
             refreshFileSystem(directorysHistoryStack.push(item.dbId), setFileSystemData, setDirectorysHistoryStack, setLoading);

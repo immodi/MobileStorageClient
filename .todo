@@ -3,3 +3,5 @@
 2- Better UI for the file downloader
 
 3- Check if the folder uri stored in the permissions exists
+
+4- Canceling and pausing currently running download

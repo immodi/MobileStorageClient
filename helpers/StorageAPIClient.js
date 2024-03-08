@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
-// import * as MediaLibrary from 'expo-media-library';
 import axios from 'axios';
+import { Buffer } from 'buffer';
 
 class StorageClient {
     constructor(apiUrl = "http://192.168.1.10:8000") {
@@ -32,6 +32,13 @@ class StorageClient {
         return response.data;
     }
 
+    async getFileDataWithId(file_id) {
+        const response = await axios.get(`${this.apiUrl}/file`, {
+            params: { fileId: file_id },
+        });
+        return response.data;
+    }
+
     async getCurrentDirectoryContents(directory_id = 1) {
         const response = await axios.get(this.apiUrl, { params: { dirId: directory_id } });
         return response;
@@ -47,6 +54,79 @@ class StorageClient {
         const data = { dirPath: directory_path };
         const response = await axios.post(`${this.apiUrl}/directory`, null, { params: data });
         return response.data;
+    }
+
+    async mergeAndWriteBinFiles(permissions, fileUris, outputFileName, fileMimeType) {
+        try {
+            // Read content of each .bin file and concatenate them
+            const mergedContent = await Promise.all(
+                fileUris.map(async (fileUri) => {
+                    try {
+                        const fileBinary = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+                        return Buffer.from(fileBinary, 'base64').toString('binary');
+                    } catch (error) {
+                        console.error(`Error reading file ${fileUri}: ${error}`);
+                    }
+                })
+            );
+
+            const finalContent = Buffer.from(mergedContent.join(""), 'binary').toString('base64');
+
+            await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri+"%2F", outputFileName, fileMimeType)
+            .then(async (uri) => {
+                await FileSystem.writeAsStringAsync(uri, finalContent, { encoding: FileSystem.EncodingType.Base64 });
+            }).catch((e) => {
+                console.log(e);
+            });
+
+            fileUris.map(async (fileUri) => {
+                try {
+                    await FileSystem.deleteAsync(fileUri)
+                } catch (error) {
+                    console.error(`Error reading file ${fileUri}: ${error}`);
+                }
+            })
+
+            console.log(`Merged content written to ${outputFileName}`);
+        } catch (error) {
+            console.error(`Error merging and writing files: ${error}`);
+        }
+    }
+    
+    async downloadFileFromServer(file_id, progress, setProgress) {
+        try {
+            const file_data = await this.getFileDataWithId(file_id);
+            console.log('Currently downloading => ', file_data.fileName);
+            let chunks_id_list = file_data.chunksIds;
+            let chunks_urls = []
+          
+
+            for (let chunk_data_index = 0; chunk_data_index < chunks_id_list.length; chunk_data_index++) {
+                const chunk_id = chunks_id_list[chunk_data_index].chunkId;
+                const chunk_name = chunks_id_list[chunk_data_index].chunkName;
+
+                const response = await axios.get(`${this.apiUrl}/download`, {
+                    params: { chunkId: chunk_id, isLink: true },
+                });
+
+                chunks_urls.push(response.data.url)
+            }
+
+            chunks_id_list.map((chunkObject, index) => {
+                chunks_id_list[index].chunkUrl = chunks_urls[index]
+            }); 
+            
+            setProgress({
+                ...progress,
+                progress: 0.0001,
+                data: chunks_id_list,
+                download: true
+            })
+
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
     }
 
     //checked unitl here
@@ -85,29 +165,6 @@ class StorageClient {
         }
     }
 
-    async mergeChunks(chunks_directory, file_name) {
-        try {
-            const output_file_path = `${FileSystem.documentDirectory}${file_name}`;
-            const output_file = await FileSystem.openAsync(output_file_path, 'wb');
-
-            let chunk_number = 1;
-            let chunk_filename = `${chunks_directory}/${file_name}_${chunk_number}.bin`;
-
-            while (await FileSystem.getInfoAsync(chunk_filename)) {
-                const chunk_data = await FileSystem.readAsStringAsync(chunk_filename, { encoding: 'base64' });
-                await FileSystem.writeAsStringAsync(output_file, chunk_data, { encoding: 'base64' });
-
-                chunk_number++;
-                chunk_filename = `${chunks_directory}/${file_name}_${chunk_number}.bin`;
-            }
-
-            return output_file_path;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
     async getFileSizeInBytes(file_path) {
         const fileInfo = await FileSystem.getInfoAsync(file_path);
         return fileInfo.size;
@@ -123,7 +180,7 @@ class StorageClient {
         }
     }
 
-    async uploadFile(file_local_path, directory_path = '~') {
+    async uploadFileToServer(file_local_path, directory_path = '~') {
         try {
             const file_size = await this.getFileSizeInBytes(file_local_path);
             const file_mime_type = await this.getMimeType(file_local_path);
@@ -183,40 +240,6 @@ class StorageClient {
         } catch (error) {
             console.error(error);
             return false;
-        }
-    }
-
-    async downloadFile(file_path) {
-        try {
-            const file_name = file_path.split('/').pop();
-            const file_data = await this.getFileData(file_path);
-            console.log('Currently downloading => ', file_name);
-            const chunks_id_list = file_data.chunksIds;
-            const output_directory = file_name.split('.')[0];
-
-            if (!(await FileSystem.getInfoAsync(output_directory)).exists) {
-                await FileSystem.makeDirectoryAsync(output_directory);
-            }
-
-            for (let chunk_data_index = 0; chunk_data_index < chunks_id_list.length; chunk_data_index++) {
-                const chunk_id = chunks_id_list[chunk_data_index].chunkId;
-                const chunk_name = chunks_id_list[chunk_data_index].chunkName;
-
-                const response = await axios.get(`${this.apiUrl}/download`, {
-                    params: { chunkId: chunk_id },
-                    responseType: 'arraybuffer',
-                });
-
-                const chunk_data = Buffer.from(response.data, 'binary').toString('base64');
-                await FileSystem.writeAsStringAsync(`${output_directory}/${chunk_name}`, chunk_data, {
-                    encoding: FileSystem.EncodingType.Base64,
-                });
-            }
-
-            return await this.mergeChunks(output_directory, file_name);
-        } catch (error) {
-            console.error(error);
-            return null;
         }
     }
 }

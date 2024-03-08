@@ -2,10 +2,12 @@ import * as FileSystem from 'expo-file-system';
 
 export default async function downloadFile(permissions, progress, setProgress) {    
 
-    let downloadUrl =  progress.data[progress.currentIteration][0]
-    let fileName = progress.data[progress.currentIteration][1]
-    let fileMimeType = progress.data[progress.currentIteration][2]
-    const downloadResumable = createDownloadResumable(downloadUrl, fileName)
+    let downloadUrl =  progress.data[progress.currentIteration].chunkUrl
+    let fileName = progress.data[progress.currentIteration].chunkName
+    let fileMimeType = "application/octet-stream"
+    // let fileMimeType = progress.data[progress.currentIteration].chunkMimeType
+    
+    const downloadResumable = createDownloadResumable(downloadUrl, fileName, 1/progress.data.length, progress, setProgress)
 
     return await startDownloading(permissions, downloadResumable, fileName, fileMimeType, progress, setProgress)
 }
@@ -23,11 +25,12 @@ const startDownloading = async (permissions, downloadResumable, fileName, fileMi
 }
 
 
-const createDownloadResumable = (url, fileName) => {
+const createDownloadResumable = (url, fileName, ratio, progress, setProgress) => {
     const downloadResumable = FileSystem.createDownloadResumable(
         url,
         FileSystem.cacheDirectory + fileName,
-        {}
+        {},
+        (progressObject) => {callback(progressObject, ratio, progress, setProgress)}
     );
 
     return downloadResumable
@@ -71,8 +74,13 @@ const saveAndroidFile = async (permissions, fileUri, fileName, fileMimeType, pro
     }
 }
 
-const callback = (downloadProgress) => {
-    const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
-    console.log(`${progress}% downloaded`);
+const callback = (downloadProgress, ratio, progress, setProgress) => {
+    const progressDone = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * ratio;
+    console.log(progressDone+progress.progress);
+    setProgress({
+        ...progress,
+        progress: progressDone+progress.progress,
+        download: false
+    })
 };
 
