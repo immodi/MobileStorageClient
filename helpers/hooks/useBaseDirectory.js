@@ -22,20 +22,20 @@ const createBaseDirctory = async () => {
         let storedPermissions = await getObjectData('directoryPermissions');
 
         if (storedPermissions === null) {
-            let permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
             if (!permissions.granted) {
                 return new Promise((resolve, reject) => {
                     resolve(false)
                 });
             }
 
-            await FileSystem.StorageAccessFramework.makeDirectoryAsync(permissions.directoryUri, 'Storage Client');
-            let modifiedBaseUri = permissions.directoryUri+"%2FStorage%20Client"
+            // // await FileSystem.StorageAccessFramework.makeDirectoryAsync(permissions.directoryUri, 'Storage Client');
+            // // let modifiedBaseUri = permissions.directoryUri+"%2FStorage%20Client"
             
-            let baseDirectoryUri = `${modifiedBaseUri}/document/primary${modifiedBaseUri.split("/primary")[1]}` 
-            //fkin black magic to get the base directory uri
+            // // let baseDirectoryUri = `${modifiedBaseUri}/document/primary${modifiedBaseUri.split("/primary")[1]}` 
+            // // //fkin black magic to get the base directory uri
             
-            permissions = {...permissions, directoryUri: baseDirectoryUri}
+            // permissions = {...permissions, directoryUri: baseDirectoryUri}
 
             await storeObjectData('directoryPermissions', permissions)  
 
