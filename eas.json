@@ -10,9 +10,6 @@
     "preview": {
       "android": {
         "buildType": "apk"
-      },
-      "ios": {
-        "buildType": "app-store"
       }
     },
     "production": {
