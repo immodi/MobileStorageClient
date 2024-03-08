@@ -72,7 +72,7 @@ class StorageClient {
 
             const finalContent = Buffer.from(mergedContent.join(""), 'binary').toString('base64');
 
-            await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri+"%2F", outputFileName, fileMimeType)
+            await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, outputFileName, fileMimeType)
             .then(async (uri) => {
                 await FileSystem.writeAsStringAsync(uri, finalContent, { encoding: FileSystem.EncodingType.Base64 });
             }).catch((e) => {

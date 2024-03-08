@@ -48,7 +48,7 @@ const saveAndroidFile = async (permissions, fileUri, fileName, fileMimeType, pro
             console.log("got permissions saving");
             const fileString = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
             let outputFileUri = null
-            await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri+"%2F", fileName, fileMimeType)
+            await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, fileMimeType)
             .then(async (uri) => {
                 await FileSystem.writeAsStringAsync(uri, fileString, { encoding: FileSystem.EncodingType.Base64 });
                 // alert(`File ${fileName} saved in ${permissions.directoryUri}`);
