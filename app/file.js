@@ -9,9 +9,10 @@ import StorageClient from "../helpers/StorageAPIClient";
 
 
 const FileCard = () => {
-    const client = new StorageClient();
+    const client = new StorageClient("https://freetelebot.pythonanywhere.com");
     const itemData = useLocalSearchParams();
     const permissions = useBaseDirectory();
+    const [fileData, setFileData] = useState({}) 
     const [buttonText, setButtonText] = useState('Download');
     const [filesUris, setFilesUris] = useState([]);
     const [progress, setProgress] = useState({
@@ -48,10 +49,12 @@ const FileCard = () => {
     }, [progress])
 
     useEffect(() => {
-        if (progress.data && filesUris.length === progress.data.length) {
+        if (progress.data && filesUris.length === progress.data.length && fileData) {
             console.log("merging");
             let collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
-            client.mergeAndWriteBinFiles(permissions, filesUris.sort(collator.compare), 'Cheat Code Hitter.zip', 'application/zip')
+            
+            // edit to make it take the current file data
+            client.mergeAndWriteBinFiles(permissions, filesUris.sort(collator.compare), itemData.name, fileData.fileMimeType)
             .then(() => {
                 setButtonText("Done")
             })
@@ -71,7 +74,9 @@ const FileCard = () => {
         //         chunkMimeType: 'image/jpeg'
         //     },
         // ]
-        client.downloadFileFromServer(itemData.id, progress, setProgress)
+        client.downloadFileFromServer(itemData.id, progress, setProgress).then(fileData => {
+            setFileData(fileData)
+        })
 
         // let data = [
         //     "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FCloudstream%2FStorage%20Client/document/primary%3ADownload%2FCloudstream%2FStorage%20Client%2FThe%20Cheat%20Code%20Hitter.zip_1.bin",

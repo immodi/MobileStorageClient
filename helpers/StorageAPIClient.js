@@ -123,6 +123,10 @@ class StorageClient {
                 download: true
             })
 
+            return new Promise((resolve) => {
+                resolve(file_data)
+            })
+
         } catch (error) {
             console.error(error);
             return null;

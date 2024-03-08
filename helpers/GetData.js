@@ -2,7 +2,7 @@ import axios from 'axios';
 import StorageClient from './StorageAPIClient';
 
 export default async function getFileSystem(currentDirectoryId, setFileSystemData) {
-    let client = new StorageClient()
+    let client = new StorageClient("https://freetelebot.pythonanywhere.com")
     const response = await client.getCurrentDirectoryContents(currentDirectoryId) 
     
     if (response.status === 200) {
